@@ -1,0 +1,384 @@
+---
+title: "<font size=10>ROCK Never out of Date</font>"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+![](C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/figs/jay.jpg)
+
+### Project Background
+```{r echo=FALSE, message=FALSE, include= FALSE}
+library(dplyr)
+library(tidytext)
+library(textdata)
+library(ggplot2)
+library(tidyr)
+library(tm)
+library(wordcloud)
+library(RColorBrewer)
+library(radarchart)
+```
+
+Everyone has his own favourite singers and songs. Maybe within different period, preference will change. But classics will remain popular for certain reason. In this project, the secret of Rock will be revealed and the convey of emotion will be discussed.
+```{r warning=FALSE, echo=FALSE,message=FALSE}
+#import data
+lyric<-read.csv('C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/data/lyrics.csv',stringsAsFactors = FALSE)
+#clean data and drop the data when genre is not available or other
+lyric<-lyric %>%
+  filter(!is.na(lyrics)&!(genre %in% c('Not Available','Other'))& year>=1970)
+  
+#turn uppercase into lowercase
+lyric$lyrics <- tolower(lyric$lyrics)
+#drop non-alphabet character
+lyric$lyrics <- gsub("[^0-9A-Za-z///' ]", "", lyric$lyrics)
+
+#the distribution of word and due to allocation problem, the work of data cleaning is done in another R.script
+lyric_not_sum<-read.csv('C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/output/lyric_not_sum.csv',stringsAsFactors = FALSE)
+
+#count number of different genre and sentiment
+lyric_fraction<-lyric_not_sum %>%
+  group_by(genre,sentiment) %>%
+  summarize(number=n()) %>%
+  group_by(genre)%>%
+  mutate(fraction=number/sum(number)) 
+
+#number of genre
+lyric_prop_genre<-lyric %>%
+  group_by(genre) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(proportion=n/sum(n))
+```
+
+The proportion of different genres for all songs:
+```{r echo=FALSE}
+library(ggplot2)
+ggplot(aes(x=reorder(genre, proportion),y=proportion),data=lyric_prop_genre)+
+  geom_col(fill="pink")+
+  coord_flip()+
+  labs(title="The proportion of Genre", ylabs="Genre", xlab="Proportion")+
+  theme_light()
+```
+
+As is shown, for total number of songs, the proportion of Rock is the highest, which means there is more Rock songs than any other kind of genres. Next, let's check the population of Rock during past 50 years.
+```{r echo=FALSE}
+lyric_period_genre<-lyric_not_sum %>%
+  mutate(period=case_when(year>=1970&year<1980~"1970s",
+                          year>=1980&year<1990~"1980s",
+                          year>=1990&year<2000~"1990s",
+                          year>=2000&year<2010~"2000s",
+                          TRUE~"2010s")) %>%
+  group_by(period,genre) %>%
+  count%>%
+  ungroup()%>%
+  group_by(period) %>%
+  mutate(k=sum(n)) %>%
+  ungroup() %>%
+  mutate(proportion=n/k)
+ggplot(aes(x=reorder(genre,proportion),y=proportion),data=lyric_period_genre)+
+  geom_col(fill="lavender")+
+  facet_wrap(~period)+
+  coord_flip()+
+  theme_light()
+```
+
+From the plots of proportion of genres during different periods, it is obvious that Rock music has been always the most popular genre since 1970s. Therefore, the difference in essence between Rock and other genres that leads to the popularity sounds attractive.
+
+### Sentiment Analysis
+
+As is known to all, an important function of music is to express mood. So it is important to figure out the differnece between Rock music and other genres in expressing mood that may influence the need of certain genre of music. Lyric is a good way to convey emotional information, for example, if the theme of a song is positive, the words in lyrics will contain happy, hope such positive words with high probability, instead of kill, death such negative words. Therefore, I will first have a general review of frequent used words in all kinds of genres to figure out whether Rock music behaves differently in conveying emotions compared to other genres.
+
+**WordCloud of Rock**
+
+```{r echo=FALSE}
+colors<-c('pink','orange','red','blue','green','yellow','purple')
+lyric_Rock<-lyric_not_sum %>%
+  filter(genre=="Rock") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Rock")
+wordcloud(lyric_Rock$word,lyric_Rock$number,scale=c(5,0.3),min.freq=1,max.words=100,colors=colors,random.order=F,random.color=F,ordered.colors=F)
+```
+
+From the wordcloud plot, it can be seen that love feeling and good are the most frequent words used in Rock music. Besides, bad, lose, lonely and hate are often metioned in lyrics. So it could be inferred that Rock music can always be used to express positive and nagative emotions.
+
+**WordCloud of Metal**
+
+```{r echo=FALSE}
+lyric_Metal<-lyric_not_sum %>%
+  filter(genre=="Metal") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Metal")
+wordcloud(lyric_Metal$word,lyric_Metal$number,scale=c(5,0.3),min.freq=1,max.words=100,colors=colors,random.order=F,random.color=F,ordered.colors=F)
+```
+
+From the wordcloud plot, it can be seen that death, hate, god and hell are the most frequent words used in Rock music. Besides, pain, die and fear are often metioned in lyrics. So it could be inferred that Metal music can always be used to express extremely nagative emotions.
+
+**WordCloud of Country**
+
+```{r echo=FALSE}
+lyric_Country<-lyric_not_sum %>%
+  filter(genre=="Country") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Country")
+wordcloud(lyric_Country$word,lyric_Country$number,scale=c(5,0.3),min.freq=1,max.words=100,colors=colors,random.order=F,random.color=F,ordered.colors=F)
+```
+
+From the wordcloud plot, it can be seen that good, love and sweet are the most frequent words used in Rock music. Besides, feeling, baby and lonely are often metioned in lyrics. So it could be inferred that Country music can always be used to express positive and warm emotions.
+
+Due to the limit of space, the report only shows three genres' wordclouds. But it is obvious that different kinds of genres always use different kinds of words highly associated with some kinds of emotions. Next, I will show a more detailed version of frequent used words of all genres.
+
+
+**TOP 10 frequentist used words of all gernes**:
+```{r echo=FALSE}
+#Hip-Hop
+lyric_Hip_Hop<-lyric_not_sum %>%
+  filter(genre=="Hip-Hop") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Hip-Hop")
+
+lyric_Hip_Hop_sort<-lyric_Hip_Hop %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Pop
+lyric_Pop<-lyric_not_sum %>%
+  filter(genre=="Pop") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Pop")
+
+lyric_Pop_sort<-lyric_Pop %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Metal
+lyric_Metal<-lyric_not_sum %>%
+  filter(genre=="Metal") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Metal")
+
+lyric_Metal_sort<-lyric_Metal %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Rock
+lyric_Rock<-lyric_not_sum %>%
+  filter(genre=="Rock") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Rock")
+
+lyric_Rock_sort<-lyric_Rock %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Country
+lyric_Country<-lyric_not_sum %>%
+  filter(genre=="Country") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Country")
+
+lyric_Country_sort<-lyric_Country %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Indie
+lyric_Indie<-lyric_not_sum %>%
+  filter(genre=="Indie") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Indie")
+
+lyric_Indie_sort<-lyric_Indie %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Jazz
+lyric_Jazz<-lyric_not_sum %>%
+  filter(genre=="Jazz") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Jazz")
+
+lyric_Jazz_sort<-lyric_Jazz %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Electronic
+lyric_Electronic<-lyric_not_sum %>%
+  filter(genre=="Electronic") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Electronic")
+
+lyric_Electronic_sort<-lyric_Electronic %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#R&B
+lyric_R_B<-lyric_not_sum %>%
+  filter(genre=="R&B") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="R&B")
+
+lyric_R_B_sort<-lyric_R_B %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#Folk
+lyric_Folk<-lyric_not_sum %>%
+  filter(genre=="Folk") %>%
+  group_by(word) %>%
+  summarize(number=n(),name="Folk")
+
+lyric_Folk_sort<-lyric_Folk %>%
+  arrange(desc(number)) %>%
+  head(10)
+
+#plot frequent words of Folk and Indie
+lyric_frequent_words1<-rbind(lyric_Folk_sort,lyric_Indie_sort)
+
+
+ggplot(aes(x=word,y=number),data=lyric_frequent_words1)+
+  geom_col(fill='lightblue1')+
+  facet_wrap(~name)+
+  coord_flip()+
+  labs(title="TOP 10 popluar words in Folk and Indie genre",xlab="Word",ylab="Number")+
+  theme_light()
+
+#plot frequent words of Jazz, R&B and Electronic
+lyric_frequent_words2<-rbind(lyric_Jazz_sort,lyric_R_B_sort,lyric_Electronic_sort)
+
+
+ggplot(aes(x=word,y=number),data=lyric_frequent_words2)+
+  geom_col(fill='seashell2')+
+  facet_wrap(~name)+
+  coord_flip()+
+  labs(title="TOP 10 popluar words in Jazz, R&B and Electronic genre",xlab="Word",ylab="Number")+
+  theme_light()
+
+#plot frequent words of Metal and Country
+lyric_frequent_words3<-rbind(lyric_Metal_sort,lyric_Country_sort,lyric_R_B_sort)
+
+
+ggplot(aes(x=word,y=number),data=lyric_frequent_words3)+
+  geom_col(fill='lightpink1')+
+  facet_wrap(~name)+
+  coord_flip()+
+  labs(title="TOP 10 popluar words in Metal and Country genre",xlab="Word",ylab="Number")+
+  theme_light()
+
+#plot frequent words of Hip-Hop, Pop and Rock
+lyric_frequent_words4<-rbind(lyric_Hip_Hop_sort,lyric_Pop_sort,lyric_Rock_sort)
+
+ggplot(aes(x=word,y=number),data=lyric_frequent_words4)+
+  geom_col(fill='plum1')+
+  facet_wrap(~name)+
+  coord_flip()+
+  labs(title="TOP 10 popluar words in Hip-Hop, Pop and Rock genre",xlab="Word",ylab="Number")+
+  theme_light()
+```
+
+According to the plots above, some kinds of genres have similar kinds of emotions, but there are still many genres using other emotional expression. In order to filter similar genres in emotion, I will use radar plot to figure it out.
+
+**Radar plot of genre Country, Electronic and Folk**
+
+```{r echo=FALSE}
+a<-lyric_fraction %>%
+  pivot_wider(c(1,2,4),names_from=genre,values_from=fraction) 
+a[,c(1:4)]%>%
+  chartJSRadar(showToolTipLabel = TRUE,main = "Genre Radar",maxScale=0.2)
+```
+
+**Radar plot of genre Jazz, Metal and Rock**
+```{r echo=FALSE}
+a[,c(1,7,8,11)]%>%
+  chartJSRadar(showToolTipLabel = TRUE,main = "Gerne Radar",maxScale=0.2)
+```
+
+**Radar plot of genre Indie and Hip-Hop**
+
+```{r echo=FALSE}
+a[,c(1,5,6)]%>%
+  chartJSRadar(showToolTipLabel = TRUE,main = "Gerne Radar",maxScale=0.2)
+```
+
+**Radar plot of genre Pop and R&B**
+
+```{r echo=FALSE}
+a[,c(1,9:10)]%>%
+  chartJSRadar(showToolTipLabel = TRUE,main = "Gerne Radar",maxScale=0.2)
+```
+
+Analyzing the radar plots, the shape of distribution of Rock, Jazz and Metal significantly differ from other genres. However, each of them also has its own shape, which means these three genres each represents one kind of emotion. For example, Rock represents both positive and negative, Metal represents extremely negative and Jazz represents extreme positive. But according to the popularity plot during periods shown in first sectio, only rock has been very popular since 1970s. Jazz and Metal are less polular, or even very little attention. It is an interesting problem. 
+
+Assuming that the preference of emotions are associated with time, we need to confirm whether people always preference positive and negative emotions for a long time, instead of single extreme positive or negative. If so, it can be explained that for similar genres, one genre can be replaced by other similar genres, so all of them conldn't obtain high popularity. For Metal and Jazz, because only few people are interested in the extreme emotions they express, they have been overlooked for a long time. Therefore, it is necessary to figure out the relationship between people's preference and time.
+
+**Smooth plot of sentiment and year**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+lyric_year<-lyric_not_sum %>%
+  group_by(year,sentiment) %>%
+  summarize(number=n())
+ggplot(aes(x=year,y=number,color=sentiment),data=lyric_year)+
+  geom_smooth(method="loess",se=FALSE)+
+  xlim(2000,2016)+
+  labs(title="The number of sentiments since 2000s", xlabs="Year", ylab="Number")+
+  theme_light()
+
+```
+
+As is shown in the smooth plot, positive and negative are the most two popluar emotions, which are Rock music focused on. Besides,in order to have a better review of people's preference, I divide the past 50 years into 5 different time periods, and see which sentiments people favored most during that time.
+
+**Plot of sentiment and time period**
+
+```{r echo=FALSE,message=FALSE}
+lyric_period<-lyric_not_sum %>%
+  mutate(period=case_when(year>=1970&year<1980~"1970s",
+                          year>=1980&year<1990~"1980s",
+                          year>=1990&year<2000~"1990s",
+                          year>=2000&year<2010~"2000s",
+                          TRUE~"2010s")) %>%
+  group_by(period,sentiment) %>%
+  count%>%
+  ungroup()%>%
+  group_by(period) %>%
+  mutate(k=sum(n)) %>%
+  ungroup() %>%
+  mutate(proportion=n/k)
+
+ggplot(aes(x=sentiment,y=proportion),data=lyric_period)+
+  geom_col(fill="greenyellow")+
+  facet_wrap(~period)+
+  coord_flip()+
+  theme_light()
+```
+
+Therefore, no matter which period, positive and negative emotions are still popular by people, which explains the reason that Rock never out of date with its unique emotional expression. Besides, Rock music is also good at expressing all kinds of sentiments.
+
+**The distrition of genres in different sentiments**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+ggplot(aes(sentiment,fill=genre),data=lyric_not_sum)+
+    geom_bar()+
+    coord_flip()+
+    labs(title="The distribution of genre among different sentiments", xlabs="Sentiments", ylab="Number")+
+    theme_light()
+```
+
+For each sentiment, Rock also occupy a large number of songs to express the sentiment, which means that Rock music is good at expressing all kinds of sentiments. This advantage also contributes to the popularity of Rock.
+
+
+### Summary
+
+Rock music has been popular and not out of date for past 50 years. By sentiment analysis, this phenomenon results from its unique emotional expression that people prefer for a long time and its involvement in all kinds of sentiments.
+
+![](C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/figs/chou.jpg)
+
+
+### Reference
+
+1. image1: https://www.google.com.hk/imgres?imgurl=https%3A%2F%2Fi.ytimg.com%2Fvi%2FHK7SPnGSxLM%2Fmaxresdefault.jpg&imgrefurl=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DHK7SPnGSxLM&tbnid=0oVZSFFOnpdFFM&vet=12ahUKEwi95aDIrrbnAhVfQDABHQP0ClgQMygDegUIARDWAQ..i&docid=Y9TwiM4pklfOIM&w=1280&h=720&itg=1&q=%E8%AF%B4%E5%A5%BD%E4%B8%8D%E5%93%AD&hl=zh-CN&safe=strict&ved=2ahUKEwi95aDIrrbnAhVfQDABHQP0ClgQMygDegUIARDWAQ
+
+2. image2: https://image.baidu.com/search/detail?ct=503316480&z=0&ipn=d&word=%E6%9D%B0%E4%BC%A6%20%E7%BB%8F%E5%85%B8%20mv&step_word=&hs=0&pn=13&spn=0&di=10340&pi=0&rn=1&tn=baiduimagedetail&is=0%2C0&istype=2&ie=utf-8&oe=utf-8&in=&cl=2&lm=-1&st=-1&cs=3603757715%2C1625779478&os=2883940244%2C2251360015&simid=3203681600%2C3873919620&adpicid=0&lpn=0&ln=1540&fr=&fmq=1580766788020_R&fm=result&ic=&s=undefined&hd=&latest=&copyright=&se=&sme=&tab=0&width=&height=&face=undefined&ist=&jit=&cg=&bdtype=0&oriquery=&objurl=http%3A%2F%2Fimage001.ytexpress.cn%2F20170618%2F270d3065f6a431f03b76e438231eb1be.jpg&fromurl=ippr_z2C%24qAzdH3FAzdH3Fooo_z%26e3Bypjxr6jff_z%26e3BvgAzdH3Fysk2AzdH3Fda80amAzdH3F8099cb_z%26e3Bip4s&gsm=&rpstart=0&rpnum=0&islist=&querylist=&force=undefined
+
+3. ADS_Teaching: https://github.com/TZstatsADS/ADS_Teaching/tree/master/Tutorials
+
