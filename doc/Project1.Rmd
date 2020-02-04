@@ -36,7 +36,8 @@ lyric$lyrics <- tolower(lyric$lyrics)
 lyric$lyrics <- gsub("[^0-9A-Za-z///' ]", "", lyric$lyrics)
 
 #the distribution of word and due to allocation problem, the work of data cleaning is done in another R.script
-lyric_not_sum<-read.csv('C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/output/lyric_not_sum.csv',stringsAsFactors = FALSE)
+#lyric_not_sum<-read.csv('C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/output/lyric_not_sum.csv',stringsAsFactors = FALSE)
+load("C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/output/lyric_not_sum.RData")
 
 #count number of different genre and sentiment
 lyric_fraction<-lyric_not_sum %>%
@@ -354,7 +355,7 @@ ggplot(aes(x=sentiment,y=proportion),data=lyric_period)+
 
 Therefore, no matter which period, positive and negative emotions are still popular by people, which explains the reason that Rock never out of date with its unique emotional expression. Besides, Rock music is also good at expressing all kinds of sentiments.
 
-**The distrition of genres in different sentiments**
+**The distribution of genres in different sentiments**
 
 ```{r echo=FALSE,message=FALSE,warning=FALSE}
 ggplot(aes(sentiment,fill=genre),data=lyric_not_sum)+
@@ -369,7 +370,7 @@ For each sentiment, Rock also occupy a large number of songs to express the sent
 
 ### Summary
 
-Rock music has been popular and not out of date for past 50 years. By sentiment analysis, this phenomenon results from its unique emotional expression that people prefer for a long time and its involvement in all kinds of sentiments.
+After analzing the popularity trend among genres for past 50 years, Rock has always been most popular music genre. In order to figure out the reason, the project conducts sentiment analysis and get the conculsion that Rock, Metal and Jazz always convey different kinds of emotion. Next, showing people's preference towards different kinds of emotions for past 50 years, compared with extremely positive or negative emotion that Jazz and Metal conveys, a balance between positive and negative that Rock are always used to express attracts people, that's why Rock never out of date. Besides, for each kind of emotion, Rock still occupy a large proportion to convey it, which also contributes to the polularity of Rock.
 
 ![](C:/Users/59482/Desktop/Columbia/Second Term/ads/project1/Spring2020-Project1-JinxiaoDu/figs/chou.jpg)
 
